@@ -6,9 +6,6 @@
 npm-debug.log*
 .DS_Store
 
-# Compiled files
-dist
-
 # Extracted strings
 strings.json
 strings.pot
