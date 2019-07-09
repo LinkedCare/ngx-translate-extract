@@ -70,6 +70,13 @@ var TranslationCollection = (function () {
         });
         return new TranslationCollection(values);
     };
+    TranslationCollection.prototype.useKeySuffixAsDefaultTranslation = function () {
+        var _this = this;
+        Object.keys(this.values).forEach(function (key) {
+            var keySplit = key.split('.');
+            _this.values[key] = keySplit[keySplit.length - 1];
+        });
+    };
     return TranslationCollection;
 }());
 exports.TranslationCollection = TranslationCollection;

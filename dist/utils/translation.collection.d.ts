@@ -17,4 +17,5 @@ export declare class TranslationCollection {
     count(): number;
     isEmpty(): boolean;
     sort(compareFn?: (a: string, b: string) => number): TranslationCollection;
+    useKeySuffixAsDefaultTranslation(): void;
 }

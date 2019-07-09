@@ -8,6 +8,8 @@ export interface ExtractTaskOptionsInterface {
     clean?: boolean;
     patterns?: string[];
     verbose?: boolean;
+    splitNamespaces?: boolean;
+    suffixAsTranslation?: boolean;
 }
 export declare class ExtractTask implements TaskInterface {
     protected _input: string[];
@@ -21,6 +23,7 @@ export declare class ExtractTask implements TaskInterface {
     setCompiler(compiler: CompilerInterface): this;
     protected _extract(): TranslationCollection;
     protected _save(collection: TranslationCollection): void;
+    protected _saveInner(normalizedOutput: string, collection: TranslationCollection): void;
     protected _readDir(dir: string, patterns: string[]): string[];
     protected _out(...args: any[]): void;
 }

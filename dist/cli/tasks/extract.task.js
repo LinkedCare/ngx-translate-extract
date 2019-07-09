@@ -57,42 +57,64 @@ var ExtractTask = (function () {
     ExtractTask.prototype._save = function (collection) {
         var _this = this;
         this._output.forEach(function (output) {
-            var normalizedOutput = path.resolve(output);
-            var dir = normalizedOutput;
-            var filename = "strings." + _this._compiler.extension;
-            if (!fs.existsSync(normalizedOutput) || !fs.statSync(normalizedOutput).isDirectory()) {
-                dir = path.dirname(normalizedOutput);
-                filename = path.basename(normalizedOutput);
+            if (_this._options.splitNamespaces) {
+                var moduleKeys_1 = new Set();
+                collection.forEach(function (key) {
+                    var moduleName = key.split('.')[0];
+                    moduleKeys_1.add(moduleName);
+                });
+                moduleKeys_1.forEach(function (moduleName) {
+                    var outputSplit = output.split(path.sep);
+                    outputSplit.splice(outputSplit.length - 1, 0, moduleName.toLowerCase());
+                    var normalizedOutput = path.resolve(outputSplit.join(path.sep));
+                    var processedCollection = collection.filter(function (key) { return key.startsWith(moduleName); });
+                    _this._saveInner(normalizedOutput, processedCollection);
+                });
             }
-            var outputPath = path.join(dir, filename);
-            var processedCollection = collection;
-            _this._out(chalk.bold('\nSaving: %s'), outputPath);
-            if (fs.existsSync(outputPath) && !_this._options.replace) {
-                var existingCollection = _this._compiler.parse(fs.readFileSync(outputPath, 'utf-8'));
-                if (!existingCollection.isEmpty()) {
-                    processedCollection = processedCollection.union(existingCollection);
-                    _this._out(chalk.dim('- merged with %d existing strings'), existingCollection.count());
-                }
-                if (_this._options.clean) {
-                    var collectionCount = processedCollection.count();
-                    processedCollection = processedCollection.intersect(collection);
-                    var removeCount = collectionCount - processedCollection.count();
-                    if (removeCount > 0) {
-                        _this._out(chalk.dim('- removed %d obsolete strings'), removeCount);
-                    }
-                }
+            else {
+                var normalizedOutput = path.resolve(output);
+                _this._saveInner(normalizedOutput, collection);
             }
-            if (_this._options.sort) {
-                processedCollection = processedCollection.sort();
-                _this._out(chalk.dim('- sorted strings'));
-            }
-            if (!fs.existsSync(dir)) {
-                mkdirp.sync(dir);
-                _this._out(chalk.dim('- created dir: %s'), dir);
-            }
-            fs.writeFileSync(outputPath, _this._compiler.compile(processedCollection));
-            _this._out(chalk.green('Done!'));
         });
+    };
+    ExtractTask.prototype._saveInner = function (normalizedOutput, collection) {
+        var dir = normalizedOutput;
+        var filename = "strings." + this._compiler.extension;
+        if (!fs.existsSync(normalizedOutput) || !fs.statSync(normalizedOutput).isDirectory()) {
+            dir = path.dirname(normalizedOutput);
+            filename = path.basename(normalizedOutput);
+        }
+        var outputPath = path.join(dir, filename);
+        var processedCollection = collection;
+        if (this._options.suffixAsTranslation) {
+            processedCollection.useKeySuffixAsDefaultTranslation();
+        }
+        this._out(chalk.bold('\nSaving: %s'), outputPath);
+        if (fs.existsSync(outputPath) && !this._options.replace) {
+            var existingCollection = this._compiler.parse(fs.readFileSync(outputPath, 'utf-8'));
+            if (!existingCollection.isEmpty()) {
+                processedCollection = processedCollection.union(existingCollection);
+                this._out(chalk.dim('- merged with %d existing strings'), existingCollection.count());
+            }
+            if (this._options.clean) {
+                var collectionCount = processedCollection.count();
+                processedCollection = processedCollection.intersect(collection);
+                var removeCount = collectionCount - processedCollection.count();
+                if (removeCount > 0) {
+                    this._out(chalk.dim('- removed %d obsolete strings'), removeCount);
+                }
+            }
+        }
+        if (this._options.sort) {
+            processedCollection = processedCollection.sort();
+            this._out(chalk.dim('- sorted strings'));
+        }
+        if (!fs.existsSync(dir)) {
+            mkdirp.sync(dir);
+            this._out(chalk.dim('- created dir: %s'), dir);
+        }
+        fs.writeFileSync(outputPath, this._compiler.compile(processedCollection));
+        this._out(chalk.green('Done!'));
     };
     ExtractTask.prototype._readDir = function (dir, patterns) {
         return patterns.reduce(function (results, pattern) {

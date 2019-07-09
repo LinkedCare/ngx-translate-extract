@@ -85,13 +85,27 @@ exports.cli = yargs
     default: true,
     type: 'boolean'
 })
+    .option('split-namespaces', {
+    alias: 'sn',
+    describe: 'Split namespaces into separate output files',
+    default: false,
+    type: 'boolean'
+})
+    .option('suffix-as-translation', {
+    alias: 'st',
+    describe: 'Use key suffix as default translation',
+    default: false,
+    type: 'boolean'
+})
     .exitProcess(true)
     .parse(process.argv);
 var extract = new extract_task_1.ExtractTask(exports.cli.input, exports.cli.output, {
     replace: exports.cli.replace,
     sort: exports.cli.sort,
     clean: exports.cli.clean,
-    patterns: exports.cli.patterns
+    patterns: exports.cli.patterns,
+    splitNamespaces: exports.cli.splitNamespaces,
+    suffixAsTranslation: exports.cli.suffixAsTranslation,
 });
 var compiler = compiler_factory_1.CompilerFactory.create(exports.cli.format, {
     indentation: exports.cli.formatIndentation
