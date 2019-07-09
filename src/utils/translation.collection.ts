@@ -83,4 +83,11 @@ export class TranslationCollection {
 
 		return new TranslationCollection(values);
 	}
+
+	public useKeySuffixAsDefaultTranslation(): void {
+		Object.keys(this.values).forEach(key => {
+			const keySplit = key.split('.');
+			this.values[key] = keySplit[keySplit.length - 1];
+		});
+	}
 }

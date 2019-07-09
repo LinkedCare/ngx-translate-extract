@@ -94,6 +94,12 @@ export const cli = yargs
 		default: false,
 		type: 'boolean'
 	})
+	.option('suffix-as-translation', {
+		alias: 'st',
+		describe: 'Use key suffix as default translation',
+		default: false,
+		type: 'boolean'
+	})
 	.exitProcess(true)
 	.parse(process.argv);
 
@@ -102,7 +108,8 @@ const extract = new ExtractTask(cli.input, cli.output, {
 	sort: cli.sort,
 	clean: cli.clean,
 	patterns: cli.patterns,
-	splitNamespaces: cli.splitNamespaces
+	splitNamespaces: cli.splitNamespaces,
+	suffixAsTranslation: cli.suffixAsTranslation,
 });
 
 const compiler: CompilerInterface = CompilerFactory.create(cli.format, {

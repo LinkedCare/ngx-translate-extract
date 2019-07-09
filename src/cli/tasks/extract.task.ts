@@ -16,6 +16,7 @@ export interface ExtractTaskOptionsInterface {
 	patterns?: string[];
 	verbose?: boolean;
 	splitNamespaces?: boolean;
+	suffixAsTranslation?: boolean;
 }
 
 export class ExtractTask implements TaskInterface {
@@ -119,6 +120,9 @@ export class ExtractTask implements TaskInterface {
 
 		const outputPath: string = path.join(dir, filename);
 		let processedCollection: TranslationCollection = collection;
+		if (this._options.suffixAsTranslation) {
+			processedCollection.useKeySuffixAsDefaultTranslation();
+		}
 
 		this._out(chalk.bold('\nSaving: %s'), outputPath);
 
