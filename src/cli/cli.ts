@@ -88,6 +88,12 @@ export const cli = yargs
 		default: true,
 		type: 'boolean'
 	})
+	.option('split-namespaces', {
+		alias: 'sn',
+		describe: 'Split namespaces into separate output files',
+		default: false,
+		type: 'boolean'
+	})
 	.exitProcess(true)
 	.parse(process.argv);
 
@@ -95,7 +101,8 @@ const extract = new ExtractTask(cli.input, cli.output, {
 	replace: cli.replace,
 	sort: cli.sort,
 	clean: cli.clean,
-	patterns: cli.patterns
+	patterns: cli.patterns,
+	splitNamespaces: cli.splitNamespaces
 });
 
 const compiler: CompilerInterface = CompilerFactory.create(cli.format, {

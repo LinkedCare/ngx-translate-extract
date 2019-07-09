@@ -15,6 +15,7 @@ export interface ExtractTaskOptionsInterface {
 	clean?: boolean;
 	patterns?: string[];
 	verbose?: boolean;
+	splitNamespaces?: boolean;
 }
 
 export class ExtractTask implements TaskInterface {
@@ -83,50 +84,73 @@ export class ExtractTask implements TaskInterface {
 	 */
 	protected _save(collection: TranslationCollection): void {
 		this._output.forEach(output => {
-			const normalizedOutput: string = path.resolve(output);
-
-			let dir: string = normalizedOutput;
-			let filename: string = `strings.${this._compiler.extension}`;
-			if (!fs.existsSync(normalizedOutput) || !fs.statSync(normalizedOutput).isDirectory()) {
-				dir = path.dirname(normalizedOutput);
-				filename = path.basename(normalizedOutput);
+			if (this._options.splitNamespaces) {
+				const moduleKeys = new Set();
+				collection.forEach(key => {
+					const moduleName = key.split('.')[0];
+					moduleKeys.add(moduleName);
+				});
+				moduleKeys.forEach((moduleName: string) => {
+					const outputSplit = output.split(path.sep);
+					outputSplit.splice(outputSplit.length - 1, 0, moduleName.toLowerCase());
+					const normalizedOutput: string = path.resolve(outputSplit.join(path.sep));
+					const processedCollection: TranslationCollection = collection.filter(key => key.startsWith(moduleName));
+					this._saveInner(normalizedOutput, processedCollection);
+				});
+			} else {
+				const normalizedOutput: string = path.resolve(output);
+				this._saveInner(normalizedOutput, collection);
 			}
-
-			const outputPath: string = path.join(dir, filename);
-			let processedCollection: TranslationCollection = collection;
-
-			this._out(chalk.bold('\nSaving: %s'), outputPath);
-
-			if (fs.existsSync(outputPath) && !this._options.replace) {
-				const existingCollection: TranslationCollection = this._compiler.parse(fs.readFileSync(outputPath, 'utf-8'));
-				if (!existingCollection.isEmpty()) {
-					processedCollection = processedCollection.union(existingCollection);
-					this._out(chalk.dim('- merged with %d existing strings'), existingCollection.count());
-				}
-
-				if (this._options.clean) {
-					const collectionCount = processedCollection.count();
-					processedCollection = processedCollection.intersect(collection);
-					const removeCount = collectionCount - processedCollection.count();
-					if (removeCount > 0) {
-						this._out(chalk.dim('- removed %d obsolete strings'), removeCount);
-					}
-				}
-			}
-
-			if (this._options.sort) {
-				processedCollection = processedCollection.sort();
-				this._out(chalk.dim('- sorted strings'));
-			}
-
-			if (!fs.existsSync(dir)) {
-				mkdirp.sync(dir);
-				this._out(chalk.dim('- created dir: %s'), dir);
-			}
-			fs.writeFileSync(outputPath, this._compiler.compile(processedCollection));
-
-			this._out(chalk.green('Done!'));
 		});
+	}
+
+	/**
+	 * Actually process collection according to options (merge, clean, sort), compile and save
+	 * @param normalizedOutput
+	 * @param collection
+	 */
+	protected _saveInner(normalizedOutput: string, collection: TranslationCollection) {
+		let dir: string = normalizedOutput;
+		let filename: string = `strings.${this._compiler.extension}`;
+		if (!fs.existsSync(normalizedOutput) || !fs.statSync(normalizedOutput).isDirectory()) {
+			dir = path.dirname(normalizedOutput);
+			filename = path.basename(normalizedOutput);
+		}
+
+		const outputPath: string = path.join(dir, filename);
+		let processedCollection: TranslationCollection = collection;
+
+		this._out(chalk.bold('\nSaving: %s'), outputPath);
+
+		if (fs.existsSync(outputPath) && !this._options.replace) {
+			const existingCollection: TranslationCollection = this._compiler.parse(fs.readFileSync(outputPath, 'utf-8'));
+			if (!existingCollection.isEmpty()) {
+				processedCollection = processedCollection.union(existingCollection);
+				this._out(chalk.dim('- merged with %d existing strings'), existingCollection.count());
+			}
+
+			if (this._options.clean) {
+				const collectionCount = processedCollection.count();
+				processedCollection = processedCollection.intersect(collection);
+				const removeCount = collectionCount - processedCollection.count();
+				if (removeCount > 0) {
+					this._out(chalk.dim('- removed %d obsolete strings'), removeCount);
+				}
+			}
+		}
+
+		if (this._options.sort) {
+			processedCollection = processedCollection.sort();
+			this._out(chalk.dim('- sorted strings'));
+		}
+
+		if (!fs.existsSync(dir)) {
+			mkdirp.sync(dir);
+			this._out(chalk.dim('- created dir: %s'), dir);
+		}
+		fs.writeFileSync(outputPath, this._compiler.compile(processedCollection));
+
+		this._out(chalk.green('Done!'));
 	}
 
 	/**
